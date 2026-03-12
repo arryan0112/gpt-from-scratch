@@ -17,22 +17,25 @@ def main():
     print("Using device:", device)
 
     # -----------------------------
-    # Load text dataset
+    # Load dataset
     # -----------------------------
     with open("data/the_verdict.txt", "r", encoding="utf-8") as f:
         text = f.read()
+
     # -----------------------------
     # Tokenizer
     # -----------------------------
     tokenizer = tiktoken.get_encoding("gpt2")
-
     token_ids = tokenizer.encode(text)
+
+    # -----------------------------
+    # Config
+    # -----------------------------
+    config = GPTConfig()
 
     # -----------------------------
     # Dataset
     # -----------------------------
-    config = GPTConfig()
-
     dataset = GPTDataset(
         token_ids=token_ids,
         max_length=config.context_length,
@@ -85,24 +88,27 @@ def main():
             # logits shape = (B,T,V)
             B, T, V = logits.shape
 
-            # reshape for CrossEntropyLoss
             logits = logits.view(B * T, V)
             targets = targets.view(B * T)
 
             # compute loss
             loss = loss_fn(logits, targets)
 
-            # backprop
+            # backpropagation
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
             if step % 50 == 0:
-                print(
-                    f"epoch {epoch} step {step} loss {loss.item():.4f}"
-                )
+                print(f"epoch {epoch} step {step} loss {loss.item():.4f}")
 
     print("Training finished.")
+
+    # -----------------------------
+    # Save trained model
+    # -----------------------------
+    torch.save(model.state_dict(), "gpt_model.pth")
+    print("Model saved as gpt_model.pth")
 
 
 if __name__ == "__main__":
