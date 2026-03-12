@@ -13,15 +13,14 @@ def main():
     # -----------------------------
     # Device setup
     # -----------------------------
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
     print("Using device:", device)
 
     # -----------------------------
     # Load text dataset
     # -----------------------------
-    with open("../data/the_verdict.txt", "r", encoding="utf-8") as f:
+    with open("data/the_verdict.txt", "r", encoding="utf-8") as f:
         text = f.read()
-
     # -----------------------------
     # Tokenizer
     # -----------------------------
