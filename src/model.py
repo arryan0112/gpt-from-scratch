@@ -32,3 +32,55 @@ class GPTEmbedding(nn.Module):
         x = token_embeddings + position_embeddings
 
         return self.dropout(x)
+
+
+class CausalSelfAttention(nn.Module):
+
+    def __init__(self, config):
+        super().__init__()
+
+        self.n_heads = config.n_heads
+        self.head_dim = config.emb_dim // config.n_heads
+
+        self.q_proj = nn.Linear(config.emb_dim, config.emb_dim)
+        self.k_proj = nn.Linear(config.emb_dim, config.emb_dim)
+        self.v_proj = nn.Linear(config.emb_dim, config.emb_dim)
+
+        self.out_proj = nn.Linear(config.emb_dim, config.emb_dim)
+
+        self.dropout = nn.Dropout(config.dropout)
+
+        self.register_buffer(
+            "mask",
+            torch.tril(torch.ones(config.context_length, config.context_length))
+        )
+
+    def forward(self, x):
+
+        B, T, C = x.shape
+
+        q = self.q_proj(x)
+        k = self.k_proj(x)
+        v = self.v_proj(x)
+
+        q = q.view(B, T, self.n_heads, self.head_dim).transpose(1,2)
+        k = k.view(B, T, self.n_heads, self.head_dim).transpose(1,2)
+        v = v.view(B, T, self.n_heads, self.head_dim).transpose(1,2)
+
+        att = (q @ k.transpose(-2,-1)) / (self.head_dim ** 0.5)
+
+        mask = self.mask[:T, :T]
+
+        att = att.masked_fill(mask == 0, float("-inf"))
+
+        att = torch.softmax(att, dim=-1)
+
+        att = self.dropout(att)
+
+        y = att @ v
+
+        y = y.transpose(1,2).contiguous().view(B, T, C)
+
+        y = self.out_proj(y)
+
+        return y
