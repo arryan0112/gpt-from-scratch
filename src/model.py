@@ -120,4 +120,31 @@ class TransformerBlock(nn.Module):
 
         x = x + self.ff(self.ln2(x))
 
-        return x    
+        return x 
+
+class GPTModel(nn.Module):
+
+    def __init__(self, config):
+        super().__init__()
+
+        self.embedding = GPTEmbedding(config)
+
+        self.blocks = nn.Sequential(
+            *[TransformerBlock(config) for _ in range(config.n_layers)]
+        )
+
+        self.ln_f = nn.LayerNorm(config.emb_dim)
+
+        self.head = nn.Linear(config.emb_dim, config.vocab_size, bias=False)
+
+    def forward(self, x):
+
+        x = self.embedding(x)
+
+        x = self.blocks(x)
+
+        x = self.ln_f(x)
+
+        logits = self.head(x)
+
+        return logits       
