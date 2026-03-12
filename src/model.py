@@ -84,3 +84,20 @@ class CausalSelfAttention(nn.Module):
         y = self.out_proj(y)
 
         return y
+    
+
+
+class FeedForward(nn.Module):
+
+    def __init__(self, config):
+        super().__init__()
+
+        self.net = nn.Sequential(
+            nn.Linear(config.emb_dim, 4 * config.emb_dim),
+            nn.GELU(),
+            nn.Linear(4 * config.emb_dim, config.emb_dim),
+            nn.Dropout(config.dropout)
+        )
+
+    def forward(self, x):
+        return self.net(x)    
